@@ -8,7 +8,7 @@ def analyse_message(message):
     prompt = f"""
 Analyze the following merchant incident report.
 
-Extract the following information if available:
+Extract the following information if it is explicitly stated in the merchant message:
 
 - merchant
 - payment_method
@@ -18,9 +18,18 @@ Extract the following information if available:
 - transaction_ids
 - error_message
 
-If a field cannot be determined from the merchant message, leave it empty and add its name to the "missing_fields" array.
+Rules:
 
-Use exactly the same field names in "missing_fields".
+- Extract only information explicitly stated in the merchant message.
+- Do NOT infer, assume or guess any values.
+- If a field is not explicitly mentioned, return an empty string ("") or an empty array ([]).
+- If a field is empty, add its field name to the "missing_fields" array.
+- Use exactly the same field names in "missing_fields".
+
+Examples:
+
+- Payment method "Pix" does NOT imply the country is Brazil.
+- Do not infer timestamps, countries, payment providers or incident types.
 
 Return ONLY a valid JSON object in the following format:
 
