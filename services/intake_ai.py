@@ -21,7 +21,9 @@ Extract the following information if it is explicitly stated in the merchant mes
 Rules:
 
 - Extract only information explicitly stated in the merchant message.
-- Do NOT infer, assume or guess any values.
+- Do not use external knowledge.
+- You may summarize the reported issue into a concise incident_type based on the merchant's message.
+- Do not infer facts that are not explicitly stated, such as country, payment provider, timestamps, transaction IDs or error messages.
 - If a field is not explicitly mentioned, return an empty string ("") or an empty array ([]).
 - If a field is empty, add its field name to the "missing_fields" array.
 - Use exactly the same field names in "missing_fields".
