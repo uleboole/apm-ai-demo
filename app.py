@@ -94,157 +94,157 @@ if st.session_state.analysis_complete:
     with st.expander("View Structured JSON"):
         st.json(result)
     
+    # ----------------------------------------------------
+
+    if not st.session_state.follow_up_generated:
+
+        if st.button("Generate Follow-up Questions"):
+            st.session_state.follow_up_generated = True
+            st.rerun()
+
+    if st.session_state.follow_up_generated:
+
+        follow_up = generate_follow_up_questions(result)
+
+        st.subheader("AI Follow-up Message")
+
+        st.info(follow_up)
+
+        st.subheader("Merchant Reply")
+
+        merchant_reply = st.text_area(
+            label="",
+            value="""Hi,
+
+The issue started around 10:15 UTC.
+
+Country: Brazil.
+
+Affected transaction IDs:
+
+TX123456
+TX123457
+
+Customers receive:
+
+Gateway Timeout
+
+Regards,
+ABC Store""",
+            height=220,
+            disabled=True,
+            label_visibility="collapsed"
+        )
+
         # ----------------------------------------------------
-    
-        if not st.session_state.follow_up_generated:
-    
-            if st.button("Generate Follow-up Questions"):
-                st.session_state.follow_up_generated = True
+
+        if not st.session_state.incident_ready:
+
+            if st.button("Process Reply", type="primary"):
+                st.session_state.incident_ready = True
                 st.rerun()
-    
-        if st.session_state.follow_up_generated:
-    
-            follow_up = generate_follow_up_questions(result)
-    
-            st.subheader("AI Follow-up Message")
-    
-            st.info(follow_up)
-    
-            st.subheader("Merchant Reply")
-    
-            merchant_reply = st.text_area(
-                label="",
-                value="""Hi,
-    
-    The issue started around 10:15 UTC.
-    
-    Country: Brazil.
-    
-    Affected transaction IDs:
-    
-    TX123456
-    TX123457
-    
-    Customers receive:
-    
-    Gateway Timeout
-    
-    Regards,
-    ABC Store""",
-                height=220,
-                disabled=True,
-                label_visibility="collapsed"
-            )
-    
+
+        if st.session_state.incident_ready:
+
+            with st.spinner("Analyzing merchant reply..."):
+                incident = update_incident(
+                    result,
+                    merchant_reply
+                )
+
+            st.success("Merchant reply analyzed.")
+
+            st.subheader("Updated Incident Information")
+
+            st.markdown(f"**Merchant:** {incident['merchant']}")
+            st.markdown(f"**Payment Method:** {incident['payment_method']}")
+            st.markdown(f"**Incident Type:** {incident['incident_type']}")
+            st.markdown(f"**Country:** {incident['country']}")
+            st.markdown(f"**Incident Start Time:** {incident['incident_start_time']}")
+
+            transaction_ids = incident.get("transaction_ids", [])
+
+            if transaction_ids:
+                st.markdown(
+                    f"**Transaction IDs:** {', '.join(transaction_ids)}"
+                )
+            else:
+                st.markdown("**Transaction IDs:**")
+
+            st.markdown(f"**Error Message:** {incident['error_message']}")
+
+            if incident["missing_fields"]:
+                st.subheader("Missing Information")
+
+                for field in incident["missing_fields"]:
+                    st.markdown(f"- {DISPLAY_NAMES.get(field, field)}")
+            else:
+                st.success("✅ All required information has been collected.")
+
+            with st.expander(
+                    "View Updated JSON",
+                    expanded=True
+            ):
+                display_incident = incident.copy()
+                display_incident.pop("missing_fields", None)
+
+                st.json(display_incident)
+
             # ----------------------------------------------------
-    
-            if not st.session_state.incident_ready:
-    
-                if st.button("Process Reply", type="primary"):
-                    st.session_state.incident_ready = True
-                    st.rerun()
-    
-            if st.session_state.incident_ready:
+            # Investigation
+            # ----------------------------------------------------
 
-                with st.spinner("Analyzing merchant reply..."):
-                    incident = update_incident(
-                        result,
-                        merchant_reply
-                    )
+            if not st.session_state.investigation_complete:
 
-                st.success("Merchant reply analyzed.")
+                if st.button("Run Investigation", type="primary"):
 
-                st.subheader("Updated Incident Information")
+                    st.subheader("Investigation Progress")
 
-                st.markdown(f"**Merchant:** {incident['merchant']}")
-                st.markdown(f"**Payment Method:** {incident['payment_method']}")
-                st.markdown(f"**Incident Type:** {incident['incident_type']}")
-                st.markdown(f"**Country:** {incident['country']}")
-                st.markdown(f"**Incident Start Time:** {incident['incident_start_time']}")
+                    current_step = st.empty()
 
-                transaction_ids = incident.get("transaction_ids", [])
+                    for step in run_investigation(incident):
 
-                if transaction_ids:
-                    st.markdown(
-                        f"**Transaction IDs:** {', '.join(transaction_ids)}"
-                    )
-                else:
-                    st.markdown("**Transaction IDs:**")
+                        # Показываем текущую проверку
+                        current_step.info(step["running"])
 
-                st.markdown(f"**Error Message:** {incident['error_message']}")
+                        time.sleep(1)
 
-                if incident["missing_fields"]:
-                    st.subheader("Missing Information")
+                        # Убираем строку "Checking..."
+                        current_step.empty()
 
-                    for field in incident["missing_fields"]:
-                        st.markdown(f"- {DISPLAY_NAMES.get(field, field)}")
-                else:
-                    st.success("✅ All required information has been collected.")
+                        # Добавляем завершённую проверку.
+                        # Эти строки НЕ исчезнут.
+                        st.success(step["completed"])
 
-                with st.expander(
-                        "View Updated JSON",
-                        expanded=True
-                ):
-                    display_incident = incident.copy()
-                    display_incident.pop("missing_fields", None)
+                        time.sleep(0.3)
 
-                    st.json(display_incident)
-    
-                # ----------------------------------------------------
-                # Investigation
-                # ----------------------------------------------------
-    
-                if not st.session_state.investigation_complete:
-    
-                    if st.button("Run Investigation", type="primary"):
-    
-                        st.subheader("Investigation Progress")
-    
-                        current_step = st.empty()
-    
-                        for step in run_investigation(incident):
-    
-                            # Показываем текущую проверку
-                            current_step.info(step["running"])
-    
-                            time.sleep(1)
-    
-                            # Убираем строку "Checking..."
-                            current_step.empty()
-    
-                            # Добавляем завершённую проверку.
-                            # Эти строки НЕ исчезнут.
-                            st.success(step["completed"])
-    
-                            time.sleep(0.3)
-    
-                        st.session_state.investigation_complete = True
-    
-                if st.session_state.investigation_complete:
-    
-                    st.success("Investigation completed.")
-    
-                    st.divider()
-    
-                    if not st.session_state.summary_generated:
-                        if st.button("Generate Summary"):
-                            st.session_state.summary_generated=True
+                    st.session_state.investigation_complete = True
+
+            if st.session_state.investigation_complete:
+
+                st.success("Investigation completed.")
+
+                st.divider()
+
+                if not st.session_state.summary_generated:
+                    if st.button("Generate Summary"):
+                        st.session_state.summary_generated=True
+                        st.rerun()
+
+                if st.session_state.summary_generated:
+                    summary=generate_summary()
+
+                    st.subheader("Investigation Summary")
+                    for item in summary["summary"]:
+                        st.markdown(f"- {item}")
+
+                    st.subheader("Recommendation")
+                    st.info(summary["recommendation"])
+
+                    if not st.session_state.ticket_created:
+                        if st.button("Create Incident Ticket"):
+                            st.session_state.ticket_created=True
                             st.rerun()
-    
-                    if st.session_state.summary_generated:
-                        summary=generate_summary()
-    
-                        st.subheader("Investigation Summary")
-                        for item in summary["summary"]:
-                            st.markdown(f"- {item}")
-    
-                        st.subheader("Recommendation")
-                        st.info(summary["recommendation"])
-    
-                        if not st.session_state.ticket_created:
-                            if st.button("Create Incident Ticket"):
-                                st.session_state.ticket_created=True
-                                st.rerun()
-    
-                        if st.session_state.ticket_created:
-                            st.success("Incident ticket created successfully.")
+
+                    if st.session_state.ticket_created:
+                        st.success("Incident ticket created successfully.")
