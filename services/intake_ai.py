@@ -25,6 +25,7 @@ Rules:
 - If a field is not explicitly mentioned, return an empty string ("") or an empty array ([]).
 - If a field is empty, add its field name to the "missing_fields" array.
 - Use exactly the same field names in "missing_fields".
+- Relative expressions such as "today", "this morning", "earlier", "recently" are not considered a valid incident_start_time.
 
 Examples:
 
